@@ -1,55 +1,44 @@
+#![allow(dead_code)]
+use core::fmt::{ self, Write };
+use core::sync::atomic::{ AtomicBool, Ordering };
 use crate::sbi::sbi_putchar;
 
-#[inline]
-pub fn putchar(c: u8) {
-    sbi_putchar(c)
-}
-
-pub fn puts(s: &str) {
-    for &b in s.as_bytes() {
-        putchar(b);
+struct Spin(AtomicBool);
+impl Spin {
+    const fn new() -> Self { Self(AtomicBool::new(false)) }
+    fn lock(&self) {
+        while self.0.swap(true, Ordering::Acquire) {}
     }
+    fn unlock(&self) { self.0.store(false, Ordering::Release); }
 }
 
-#[derive(Copy, Clone)]
-pub enum Arg<'a> { S(&'a str), D(i32), X(u32) }
+static LOCK: Spin = Spin::new();
 
-pub fn kprintf(fmt: &str, args: &[Arg<'_>]) {
-    let mut it = args.iter().copied();
-    let mut bytes = fmt.as_bytes().iter().copied();
-    while let Some(ch) = bytes.next() {
-        if ch != b'%' {
-            putchar(ch);
-            continue;
+pub struct Console;
+
+impl Write for Console {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        LOCK.lock();
+        for &b in s.as_bytes() {
+            sbi_putchar(b);
         }
-        match bytes.next() {
-            Some(b'%') => putchar(b'%'),
-            Some(b's') => if let Some(Arg::S(s)) = it.next() { puts(s) },
-            Some(b'd') => if let Some(Arg::D(v)) = it.next() { print_dec(v) },
-            Some(b'x') => if let Some(Arg::X(v)) = it.next() { print_hex32(v) },
-            Some(other) => { putchar(b'%'); putchar(other); }
-            None => { putchar(b'%'); break; }
-        }
+        LOCK.unlock();
+        Ok(())
     }
 }
 
-fn print_dec(mut v: i32) {
-    if v == 0 { putchar(b'0'); return; }
-    if v < 0 { putchar(b'-'); v = -v; }
-    let mut buf = [0u8; 12];
-    let mut i = buf.len();
-    let mut n = v as u32;
-    while n > 0 {
-        i -= 1; buf[i] = b'0' + (n % 10) as u8;
-        n /= 10;
-    }
-    for &b in &buf[i..] { putchar(b); }
+#[macro_export]
+macro_rules! kprint {
+    ($($arg:tt)*) => {{
+        use core::fmt::Write;
+        let _ = write!($crate::console::Console, $($arg)*);
+    }};
 }
 
-fn print_hex32(v: u32) {
-    for i in (0..8).rev() {
-        let nib = (v >> (i * 4)) & 0xF;
-        let c = b"0123456789abcdef"[nib as usize];
-        putchar(c);
-    }
+#[macro_export]
+macro_rules! kprintln {
+    () => { $crate::kprint!("\n") };
+    ($($arg:tt)*) => {{
+        $crate::kprint!("{}\n", format_args!($($arg)*));
+    }};
 }

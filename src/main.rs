@@ -3,9 +3,10 @@
 
 mod sbi;
 mod console;
+mod mem;
+mod addr;
 
 use core::arch::global_asm;
-use console::{ puts, kprintf, Arg };
 
 unsafe extern "C" {
     static __bss: u8;
@@ -31,10 +32,25 @@ pub extern "C" fn kernel_main() -> ! {
         core::ptr::write_bytes(bss_start as *mut u8, 0, len);
     }
 
-    puts("\n\n Hello World!\n");
+    kprintln!("\n[boot] hello, rusty world!");
 
-    kprintf("1 + 2 = %d, hex=%x, str=%s\n",
-        &[Arg::D(1 + 2), Arg::X(0x1a2b3c4d), Arg::S("ok")]);
+    {
+        use mem::*;
+
+        let mut buf: [u8; 32] = [0; 32];
+        copy_from(&mut buf, b"hi rust\0");
+        move_overlap(&mut buf, 0..2, 5);
+        fill(&mut buf[10..16], b'X');
+
+        kprintln!("[mem] ops done (buf[10..16] filled with 'X')");
+    }
+
+    {
+        use addr::VAddr;
+        let v = VAddr(0x1234usize);
+        kprintln!("[addr] v={:#x}, aligned_up(0x1000)={:#x}",
+            v.0, v.align_up(0x1000).0);
+    }
 
     loop { unsafe { core::arch::asm!("wfi", options(nomem, nostack)) } }
 }
