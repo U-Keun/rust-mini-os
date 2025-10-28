@@ -5,6 +5,8 @@ mod sbi;
 mod console;
 mod mem;
 mod addr;
+mod runtime;
+mod panic;
 
 use core::arch::global_asm;
 
@@ -32,6 +34,8 @@ pub extern "C" fn kernel_main() -> ! {
         core::ptr::write_bytes(bss_start as *mut u8, 0, len);
     }
 
+    // PANIC!("booted!");
+
     kprintln!("\n[boot] hello, rusty world!");
 
     {
@@ -52,11 +56,7 @@ pub extern "C" fn kernel_main() -> ! {
             v.0, v.align_up(0x1000).0);
     }
 
-    loop { unsafe { core::arch::asm!("wfi", options(nomem, nostack)) } }
-}
-
-#[panic_handler]
-fn panic(info: &core::panic::PanicInfo) -> ! {
-    let _ = info;
-    loop {}
+    loop {
+        unsafe { core::arch::asm!("wfi", options(nomem, nostack)) }
+    }
 }
