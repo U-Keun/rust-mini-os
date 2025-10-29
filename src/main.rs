@@ -7,6 +7,8 @@ mod mem;
 mod addr;
 mod runtime;
 mod panic;
+mod csr;
+mod trap;
 
 use core::arch::global_asm;
 
@@ -14,6 +16,8 @@ unsafe extern "C" {
     static __bss: u8;
     static __bss_end: u8;
     static __stack_top: u8;
+
+    fn kernel_entry();
 }
 
 global_asm!(r#"
@@ -34,26 +38,14 @@ pub extern "C" fn kernel_main() -> ! {
         core::ptr::write_bytes(bss_start as *mut u8, 0, len);
     }
 
-    // PANIC!("booted!");
 
-    kprintln!("\n[boot] hello, rusty world!");
+    let entry_addr = (kernel_entry as usize) & !0b11;
+    csr::write_stvec_direct(entry_addr);
 
-    {
-        use mem::*;
+    kprintln!("[trap] stvec set to {:#x}, triggering illegal instruction..", entry_addr);
 
-        let mut buf: [u8; 32] = [0; 32];
-        copy_from(&mut buf, b"hi rust\0");
-        move_overlap(&mut buf, 0..2, 5);
-        fill(&mut buf[10..16], b'X');
-
-        kprintln!("[mem] ops done (buf[10..16] filled with 'X')");
-    }
-
-    {
-        use addr::VAddr;
-        let v = VAddr(0x1234usize);
-        kprintln!("[addr] v={:#x}, aligned_up(0x1000)={:#x}",
-            v.0, v.align_up(0x1000).0);
+    unsafe {
+        core::arch::asm!("csrrw x0, cycle, x0", options(nostack));
     }
 
     loop {

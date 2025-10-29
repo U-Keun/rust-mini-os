@@ -13,7 +13,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 
 #[macro_export]
 macro_rules! PANIC {
-    ($fmt:literal $(, $arg:tt)*) => {{
+    ($fmt:literal $(, $arg:expr)*) => {{
         $crate::kprintln!("PANIC: {}:{}: {}",
             core::file!(), core::line!(), core::format_args!($fmt $(, $arg)*));
         $crate::runtime::halt()

@@ -4,7 +4,7 @@ SECTIONS {
     . = 0x80200000;
 
     .text : { 
-        KEEP(*(.text.entry)); 
+        KEEP(*(.text.boot)); 
         *(.text .text.*) 
     }
 
