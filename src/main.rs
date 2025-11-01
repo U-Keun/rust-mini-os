@@ -9,6 +9,7 @@ mod runtime;
 mod panic;
 mod csr;
 mod trap;
+mod alloc;
 
 use core::arch::global_asm;
 
@@ -38,15 +39,13 @@ pub extern "C" fn kernel_main() -> ! {
         core::ptr::write_bytes(bss_start as *mut u8, 0, len);
     }
 
+    alloc::init();
 
-    let entry_addr = (kernel_entry as usize) & !0b11;
-    csr::write_stvec_direct(entry_addr);
-
-    kprintln!("[trap] stvec set to {:#x}, triggering illegal instruction..", entry_addr);
-
-    unsafe {
-        core::arch::asm!("csrrw x0, cycle, x0", options(nostack));
-    }
+    let p0 = alloc::alloc_pages(2).expect("oom").paddr();
+    let p1 = alloc::alloc_pages(1).expect("oom").paddr();
+    kprintln!("[alloc] p0={:#010x}", p0 as u32);
+    kprintln!("[alloc] p1={:#010x}", p1 as u32);
+    kprintln!("[alloc] delta={:#x} (expect 0x2000)", p1 - p0);
 
     loop {
         unsafe { core::arch::asm!("wfi", options(nomem, nostack)) }
