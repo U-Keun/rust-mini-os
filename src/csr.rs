@@ -44,3 +44,4 @@ pub fn write_stvec_direct(handler_addr: usize) {
 }
 
 def_write_csr!(write_stvec, stvec);
+def_write_csr!(write_sscratch, sscratch);

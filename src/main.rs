@@ -10,6 +10,9 @@ mod panic;
 mod csr;
 mod trap;
 mod alloc;
+mod process;
+
+use crate::process::{ yield_now, init_and_boot };
 
 use core::arch::global_asm;
 
@@ -30,6 +33,41 @@ boot:
     j   kernel_main
 "#);
 
+use core::sync::atomic::{ AtomicUsize, Ordering };
+static PRINT_CNT: AtomicUsize = AtomicUsize::new(0);
+const MAX_PRINTS: usize = 200;
+
+extern "C" fn proc_a_entry() -> ! {
+    kprintln!("starting process A");
+    loop {
+        crate::console::putchar(b'A');
+        if PRINT_CNT.fetch_add(1, Ordering::Relaxed) + 1 >= MAX_PRINTS {
+            kprintln!("\n[done] reached {} prints -> shutdown", MAX_PRINTS);
+            crate::sbi::shutdown();
+        }
+        unsafe { yield_now(); }
+        busy_delay();
+    }
+}
+
+extern "C" fn proc_b_entry() -> ! {
+    kprintln!("starting process B");
+    loop {
+        crate::console::putchar(b'B');
+        if PRINT_CNT.fetch_add(1, Ordering::Relaxed) + 1 >= MAX_PRINTS {
+            kprintln!("\n[done] reached {} prints -> shutdown", MAX_PRINTS);
+            crate::sbi::shutdown();
+        }
+        unsafe { yield_now(); }
+        busy_delay();
+    }
+}
+
+#[inline(always)]
+fn busy_delay() {
+    for _ in 0..30_000 { unsafe { core::arch::asm!("nop"); } }
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn kernel_main() -> ! {
     unsafe {
@@ -39,13 +77,14 @@ pub extern "C" fn kernel_main() -> ! {
         core::ptr::write_bytes(bss_start as *mut u8, 0, len);
     }
 
+    let entry_addr = (kernel_entry as usize) & !0b11;
+    csr::write_stvec_direct(entry_addr);
+
     alloc::init();
 
-    let p0 = alloc::alloc_pages(2).expect("oom").paddr();
-    let p1 = alloc::alloc_pages(1).expect("oom").paddr();
-    kprintln!("[alloc] p0={:#010x}", p0 as u32);
-    kprintln!("[alloc] p1={:#010x}", p1 as u32);
-    kprintln!("[alloc] delta={:#x} (expect 0x2000)", p1 - p0);
+    unsafe {
+        init_and_boot(proc_a_entry, proc_b_entry);
+    }
 
     loop {
         unsafe { core::arch::asm!("wfi", options(nomem, nostack)) }

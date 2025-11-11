@@ -31,3 +31,10 @@ pub fn sbi_putchar(ch: u8) {
         let _ = sbi_call(0x01, 0, ch as usize, 0, 0, 0, 0, 0);
     }
 }
+
+pub fn shutdown() -> ! {
+    unsafe {
+        let _ = sbi_call(0x53525354, 0, 0, 0, 0, 0, 0, 0);
+        loop { core::arch::asm!("wfi", options(nomem, nostack)); }
+    }
+}

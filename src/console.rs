@@ -27,6 +27,18 @@ impl Write for Console {
     }
 }
 
+#[inline]
+pub fn putchar(b: u8) {
+    sbi_putchar(b);
+}
+
+#[inline]
+pub fn puts(s: &str) {
+    for &ch in s.as_bytes() {
+        putchar(ch);
+    }
+}
+
 #[macro_export]
 macro_rules! kprint {
     ($($arg:tt)*) => {{
