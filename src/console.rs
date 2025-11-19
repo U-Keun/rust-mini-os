@@ -18,25 +18,25 @@ pub struct Console;
 
 impl Write for Console {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        LOCK.lock();
-        for &b in s.as_bytes() {
-            sbi_putchar(b);
-        }
-        LOCK.unlock();
+        puts(s);
         Ok(())
     }
 }
 
 #[inline]
 pub fn putchar(b: u8) {
+    LOCK.lock();
     sbi_putchar(b);
+    LOCK.unlock();
 }
 
 #[inline]
 pub fn puts(s: &str) {
+    LOCK.lock();
     for &ch in s.as_bytes() {
-        putchar(ch);
+        sbi_putchar(ch);
     }
+    LOCK.unlock();
 }
 
 #[macro_export]
