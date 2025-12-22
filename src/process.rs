@@ -236,6 +236,8 @@ pub extern "C" fn idle_entry() -> ! {
 }
 
 pub unsafe fn init_and_boot(a_entry: Entry, b_entry: Entry) {
+    let _kernel_root = crate::mem::paging::init_kernel_paging();
+
     let idle = match alloc_pcb() {
         Some(p) => p,
         None => PANIC!("no free pcb for idle"),

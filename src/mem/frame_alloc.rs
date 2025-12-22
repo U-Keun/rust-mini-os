@@ -2,6 +2,7 @@
 
 use core::sync::atomic::{ AtomicUsize, Ordering };
 use crate::mem::PAGE_SIZE;
+use crate::mem::addr::PAddr;
 
 unsafe extern "C" {
     static __free_ram: u8;
@@ -21,11 +22,11 @@ pub struct Oom;
 
 #[derive(Debug, Clone, Copy)]
 pub struct PageFrame {
-    paddr: usize,
+    paddr: PAddr,
 }
 
 impl PageFrame {
-    #[inline] pub fn paddr(self) -> usize { self.paddr }
+    #[inline] pub fn paddr(self) -> PAddr { self.paddr }
 
     pub unsafe fn as_bytes_mut_static(self, n_pages: usize) -> &'static mut [u8] {
         let len = n_pages * PAGE_SIZE;
@@ -57,7 +58,7 @@ pub fn alloc_pages(n: usize) -> Result<PageFrame, Oom> {
 
         if NEXT.compare_exchange_weak(cur, new_, Ordering::AcqRel, Ordering::Relaxed).is_ok() {
             unsafe { core::ptr::write_bytes(cur as *mut u8, 0, bytes); }
-            return Ok(PageFrame { paddr: cur });
+            return Ok(PageFrame { paddr: PAddr(cur) });
         }
     }
 }

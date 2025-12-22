@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
-pub struct PAddr(pub usize);
+pub struct PAddr(pub(crate) usize);
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
-pub struct VAddr(pub usize);
+pub struct VAddr(pub(crate) usize);
 
 pub trait Addr: Copy + Eq + Ord {
     fn raw(self) -> usize;
