@@ -4,7 +4,7 @@
 
 ## 1) TL;DR
 <p align="center">
-<img width="500" height="240" alt="스크린샷 2025-11-15 오전 9 36 36" src="https://github.com/user-attachments/assets/4da74eef-fda2-4665-b6ff-2666cafe9b82" />
+<img width="917" height="406" alt="sketch" src="https://github.com/user-attachments/assets/5b843fbc-7e27-4d87-99e0-4cda0bc89e35" />
 </p>
 
 This project build an S‑mode (Supervisor) kernel in Rust.
