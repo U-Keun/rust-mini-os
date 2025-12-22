@@ -2,6 +2,12 @@
 
 use core::ops::Range;
 
+pub const PAGE_SIZE: usize = 4096;
+
+pub(crate) mod addr;
+pub(crate) mod paging;
+pub(crate) mod frame_alloc;
+
 #[inline]
 pub fn fill(buf: &mut [u8], byte: u8) {
     buf.fill(byte);

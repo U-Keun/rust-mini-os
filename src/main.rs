@@ -3,13 +3,11 @@
 
 mod sbi;
 mod console;
-mod mem;
-mod addr;
 mod runtime;
 mod panic;
 mod csr;
 mod trap;
-mod alloc;
+mod mem;
 mod process;
 
 use crate::process::{ yield_now, init_and_boot };
@@ -21,7 +19,10 @@ unsafe extern "C" {
     static __bss_end: u8;
     static __stack_top: u8;
 
-    fn kernel_entry();
+    static __kernel_base: u8;
+    static __free_ram_end: u8;
+
+    fn trap_entry();
 }
 
 global_asm!(r#"
@@ -77,10 +78,10 @@ pub extern "C" fn kernel_main() -> ! {
         core::ptr::write_bytes(bss_start as *mut u8, 0, len);
     }
 
-    let entry_addr = (kernel_entry as usize) & !0b11;
+    let entry_addr = (trap_entry as usize) & !0b11;
     csr::write_stvec_direct(entry_addr);
 
-    alloc::init();
+    crate::mem::frame_alloc::init();
 
     unsafe {
         init_and_boot(proc_a_entry, proc_b_entry);

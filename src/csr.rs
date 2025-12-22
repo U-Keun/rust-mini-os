@@ -45,3 +45,13 @@ pub fn write_stvec_direct(handler_addr: usize) {
 
 def_write_csr!(write_stvec, stvec);
 def_write_csr!(write_sscratch, sscratch);
+
+#[inline]
+pub fn write_satp(val: usize) {
+    unsafe { core::arch::asm!("csrw satp, {}", in(reg) val, options(nostack, preserves_flags)) }
+}
+
+#[inline]
+pub fn sfence_vma_all() {
+    unsafe { core::arch::asm!("sfence.vma", options(nostack, preserves_flags)) }
+}

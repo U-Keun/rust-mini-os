@@ -6,6 +6,7 @@ use core::arch::global_asm;
 
 use crate::csr;
 use crate::PANIC;
+// use crate::paging::{ self, PTE_R, PTE_W, PTE_X };
 
 // ===== Config & Types =====
 
@@ -32,6 +33,7 @@ pub struct Process {
     pub pid: i32,
     pub state: State,
     pub sp: usize, // kernel stack pointer
+    pub pt_root_phys: usize,
     pub stack: [u8; KSTACK_SIZE],
 }
 
@@ -41,6 +43,7 @@ impl Process {
             pid: -1,
             state: State::Unused,
             sp: 0,
+            pt_root_phys: 0,
             stack: [0; KSTACK_SIZE],
         }
     }

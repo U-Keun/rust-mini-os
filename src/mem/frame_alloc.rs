@@ -1,8 +1,7 @@
 #![allow(dead_code)]
 
 use core::sync::atomic::{ AtomicUsize, Ordering };
-
-pub const PAGE_SIZE: usize = 4096;
+use crate::mem::PAGE_SIZE;
 
 unsafe extern "C" {
     static __free_ram: u8;
